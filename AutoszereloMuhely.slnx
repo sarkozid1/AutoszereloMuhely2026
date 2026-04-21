@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="AutoszereloMuhely.Client/AutoszereloMuhely.Client.csproj" />
+  <Project Path="AutoszereloMuhely.Tests/AutoszereloMuhely.Tests.csproj" />
+  <Project Path="AutoszereloMuhely/AutoszereloMuhely.csproj" />
+</Solution>

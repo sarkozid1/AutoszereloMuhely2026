@@ -1,0 +1,6 @@
+@AutoszereloMuhely_HostAddress = http://localhost:5086
+
+GET {{AutoszereloMuhely_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
