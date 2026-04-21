@@ -16,7 +16,7 @@
             int kor = DateTime.Now.Year - gyartasiEv;
             double korSzorzo = kor switch
             {
-                <= 6 => 0.5,
+                <= 5 => 0.5,
                 <= 10 => 1.0,
                 <= 20 => 1.5,
                 _ => 2.0
