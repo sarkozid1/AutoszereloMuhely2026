@@ -2,6 +2,8 @@
 
 namespace AutoszereloMuhely.Dtos;
 
+// Új munka létrehozásához szükséges adatok
+// Nincs benne Id (adatbázis generálja) és Allapot (automatikusan FelvettMunka)
 public class CreateMunkaDto
 {
     [Required]

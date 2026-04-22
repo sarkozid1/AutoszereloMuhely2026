@@ -1,0 +1,58 @@
+﻿@* Megrendelői felület - Az ügyfélhez tartozó munkák listája *@
+@page "/megrendelo/munkak/{UgyfelId:int}"
+@inject HttpClient Http
+
+<h3>Az Ön munkái</h3>
+
+@if (munkak == null)
+{
+    <p>Betöltés...</p>
+}
+else if (munkak.Count == 0)
+{
+    <p>Nincs munka ehhez az ügyfélszámhoz.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Rendszám</th>
+                <th>Kategória</th>
+                <th>Hiba leírása</th>
+                <th>Súlyosság</th>
+                <th>Állapot</th>
+                <th>Esztimáció (óra)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in munkak)
+            {
+                <tr>
+                    <td>@m.Rendszam</td>
+                    <td>@m.Kategoria</td>
+                    <td>@m.HibaLeiras</td>
+                    <td>@m.HibaSulyossag</td>
+                    <td>@m.Allapot</td>
+                    <td>@m.MunkaoraEsztimacio.ToString("F1")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a href="/megrendelo">Vissza</a>
+
+@code {
+    // Az URL-ből kapott ügyfélszám
+    [Parameter]
+    public int UgyfelId { get; set; }
+
+    private List<MunkaDto>? munkak;
+
+    // Betöltéskor lekéri az ügyfél munkáit
+    protected override async Task OnInitializedAsync()
+    {
+        munkak = await Http.GetFromJsonAsync<List<MunkaDto>>($"api/munkak/ugyfel/{UgyfelId}");
+    }
+}

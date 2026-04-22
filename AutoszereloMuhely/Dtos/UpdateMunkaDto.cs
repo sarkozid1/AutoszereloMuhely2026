@@ -2,6 +2,8 @@
 
 namespace AutoszereloMuhely.Dtos;
 
+// Munka módosításához szükséges adatok
+// Nincs benne UgyfelId, mert azt nem lehet utólag változtatni
 public class UpdateMunkaDto
 {
     [Required]

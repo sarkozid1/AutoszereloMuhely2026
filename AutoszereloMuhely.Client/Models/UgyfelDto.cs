@@ -1,6 +1,5 @@
-﻿namespace AutoszereloMuhely.Dtos;
+﻿namespace AutoszereloMuhely.Client.Models;
 
-// Ügyfél adatait tartalmazó DTO - ezt kapja a kliens válaszként
 public class UgyfelDto
 {
     public int Id { get; set; }

@@ -1,0 +1,91 @@
+﻿@* Irodai felület - Egy munka részletes adatai és szerkesztése *@
+@page "/iroda/munkak/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Munka részletei</h3>
+
+@if (munka == null)
+{
+    <p>Betöltés...</p>
+}
+else
+{
+    <div>
+        <p><strong>Rendszám:</strong> @munka.Rendszam</p>
+        <p><strong>Gyártási év:</strong> @munka.GyartasiEv</p>
+        <p><strong>Kategória:</strong> @munka.Kategoria</p>
+        <p><strong>Hiba leírása:</strong> @munka.HibaLeiras</p>
+        <p><strong>Súlyosság:</strong> @munka.HibaSulyossag</p>
+        <p><strong>Állapot:</strong> @munka.Allapot</p>
+        <p><strong>Munkaóra esztimáció:</strong> @munka.MunkaoraEsztimacio.ToString("F1") óra</p>
+    </div>
+
+    <hr />
+    <h4>Szerkesztés</h4>
+    <EditForm Model="@szerkesztes" OnValidSubmit="Mentes">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Rendszám:</label>
+            <InputText @bind-Value="szerkesztes.Rendszam" />
+        </div>
+        <div>
+            <label>Gyártási év:</label>
+            <InputNumber @bind-Value="szerkesztes.GyartasiEv" />
+        </div>
+        <div>
+            <label>Kategória:</label>
+            <InputSelect @bind-Value="szerkesztes.Kategoria">
+                <option value="Karosszeria">Karosszéria</option>
+                <option value="Motor">Motor</option>
+                <option value="Futomu">Futómű</option>
+                <option value="Fekberendezes">Fékberendezés</option>
+            </InputSelect>
+        </div>
+        <div>
+            <label>Hiba leírása:</label>
+            <InputText @bind-Value="szerkesztes.HibaLeiras" />
+        </div>
+        <div>
+            <label>Súlyosság (1-10):</label>
+            <InputNumber @bind-Value="szerkesztes.HibaSulyossag" />
+        </div>
+        <button type="submit">Mentés</button>
+    </EditForm>
+
+    <a href="/iroda/munkak">Vissza a listához</a>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private MunkaDto? munka;
+    private UpdateMunkaDto szerkesztes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        munka = await Http.GetFromJsonAsync<MunkaDto>($"api/munkak/{Id}");
+        if (munka != null)
+        {
+            // A meglévő adatokkal töltjük fel a szerkesztő formot
+            szerkesztes = new UpdateMunkaDto
+            {
+                Rendszam = munka.Rendszam,
+                GyartasiEv = munka.GyartasiEv,
+                Kategoria = munka.Kategoria,
+                HibaLeiras = munka.HibaLeiras,
+                HibaSulyossag = munka.HibaSulyossag
+            };
+        }
+    }
+
+    private async Task Mentes()
+    {
+        await Http.PutAsJsonAsync($"api/munkak/{Id}", szerkesztes);
+        // Frissítjük a megjelenített adatokat az új esztimációval együtt
+        munka = await Http.GetFromJsonAsync<MunkaDto>($"api/munkak/{Id}");
+    }
+}

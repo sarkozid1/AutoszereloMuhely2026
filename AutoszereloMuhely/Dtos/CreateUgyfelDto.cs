@@ -2,6 +2,8 @@
 
 namespace AutoszereloMuhely.Dtos;
 
+// Új ügyfél létrehozásához szükséges adatok
+// Nincs benne Id, mert azt az adatbázis generálja
 public class CreateUgyfelDto
 {
     [Required]

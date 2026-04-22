@@ -5,27 +5,32 @@ using AutoszereloMuhely.Models;
 
 namespace AutoszereloMuhely.Services;
 
+// Az ügyfelek üzleti logikáját megvalósító service
 public class UgyfelService : IUgyfelService
 {
     private readonly AppDbContext _context;
 
+    // Konstruktor - DI-vel kapja meg a DbContext-et
     public UgyfelService(AppDbContext context)
     {
         _context = context;
     }
 
+    // Összes ügyfél lekérése
     public async Task<List<UgyfelDto>> GetAllAsync()
     {
         var ugyfelek = await _context.Ugyfelek.ToListAsync();
         return ugyfelek.Select(MapToDto).ToList();
     }
 
+    // Egy ügyfél lekérése id alapján
     public async Task<UgyfelDto?> GetByIdAsync(int id)
     {
         var ugyfel = await _context.Ugyfelek.FindAsync(id);
         return ugyfel == null ? null : MapToDto(ugyfel);
     }
 
+    // Új ügyfél létrehozása
     public async Task<UgyfelDto> CreateAsync(CreateUgyfelDto dto)
     {
         var ugyfel = new Ugyfel
@@ -40,6 +45,7 @@ public class UgyfelService : IUgyfelService
         return MapToDto(ugyfel);
     }
 
+    // Meglévő ügyfél adatainak módosítása
     public async Task<UgyfelDto?> UpdateAsync(int id, CreateUgyfelDto dto)
     {
         var ugyfel = await _context.Ugyfelek.FindAsync(id);
@@ -53,6 +59,7 @@ public class UgyfelService : IUgyfelService
         return MapToDto(ugyfel);
     }
 
+    // Ügyfél törlése
     public async Task<bool> DeleteAsync(int id)
     {
         var ugyfel = await _context.Ugyfelek.FindAsync(id);
@@ -63,6 +70,7 @@ public class UgyfelService : IUgyfelService
         return true;
     }
 
+    // Segédmetódus: Ugyfel entitásból UgyfelDto-t készít
     private UgyfelDto MapToDto(Ugyfel ugyfel)
     {
         return new UgyfelDto

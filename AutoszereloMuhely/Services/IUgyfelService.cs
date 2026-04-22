@@ -2,11 +2,12 @@
 
 namespace AutoszereloMuhely.Services;
 
+// Ügyfél CRUD műveletek interfész
 public interface IUgyfelService
 {
-    Task<List<UgyfelDto>> GetAllAsync();
-    Task<UgyfelDto?> GetByIdAsync(int id);
-    Task<UgyfelDto> CreateAsync(CreateUgyfelDto dto);
-    Task<UgyfelDto?> UpdateAsync(int id, CreateUgyfelDto dto);
-    Task<bool> DeleteAsync(int id);
+    Task<List<UgyfelDto>> GetAllAsync();                          // Összes ügyfél lekérése
+    Task<UgyfelDto?> GetByIdAsync(int id);                       // Egy ügyfél lekérése id alapján
+    Task<UgyfelDto> CreateAsync(CreateUgyfelDto dto);             // Új ügyfél létrehozása
+    Task<UgyfelDto?> UpdateAsync(int id, CreateUgyfelDto dto);    // Ügyfél módosítása
+    Task<bool> DeleteAsync(int id);                               // Ügyfél törlése
 }

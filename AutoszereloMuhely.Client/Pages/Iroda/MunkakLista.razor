@@ -1,0 +1,154 @@
+﻿@* Irodai felület - Munkák listázása, hozzáadása, állapotléptetés, törlés *@
+@page "/iroda/munkak"
+@inject HttpClient Http
+
+<h3>Munkák</h3>
+
+@* Új munka hozzáadása form *@
+<h4>Új munka</h4>
+<EditForm Model="@ujMunka" OnValidSubmit="UjMunkaMentes">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Ügyfél:</label>
+        <InputSelect @bind-Value="ujMunka.UgyfelId">
+            <option value="0">-- Válassz ügyfelet --</option>
+            @if (ugyfelek != null)
+            {
+                @foreach (var u in ugyfelek)
+                {
+                    <option value="@u.Id">@u.Nev</option>
+                }
+            }
+        </InputSelect>
+    </div>
+    <div>
+        <label>Rendszám (XXX-YYY):</label>
+        <InputText @bind-Value="ujMunka.Rendszam" />
+    </div>
+    <div>
+        <label>Gyártási év:</label>
+        <InputNumber @bind-Value="ujMunka.GyartasiEv" />
+    </div>
+    <div>
+        <label>Kategória:</label>
+        <InputSelect @bind-Value="ujMunka.Kategoria">
+            <option value="">-- Válassz --</option>
+            <option value="Karosszeria">Karosszéria</option>
+            <option value="Motor">Motor</option>
+            <option value="Futomu">Futómű</option>
+            <option value="Fekberendezes">Fékberendezés</option>
+        </InputSelect>
+    </div>
+    <div>
+        <label>Hiba leírása:</label>
+        <InputText @bind-Value="ujMunka.HibaLeiras" />
+    </div>
+    <div>
+        <label>Súlyosság (1-10):</label>
+        <InputNumber @bind-Value="ujMunka.HibaSulyossag" />
+    </div>
+    <button type="submit">Mentés</button>
+</EditForm>
+
+<hr />
+
+@* Munkák listája *@
+@if (munkak == null)
+{
+    <p>Betöltés...</p>
+}
+else if (munkak.Count == 0)
+{
+    <p>Nincs munka.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Rendszám</th>
+                <th>Kategória</th>
+                <th>Állapot</th>
+                <th>Súlyosság</th>
+                <th>Esztimáció (óra)</th>
+                <th>Műveletek</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in munkak)
+            {
+                <tr>
+                    <td>@m.Id</td>
+                    <td>@m.Rendszam</td>
+                    <td>@m.Kategoria</td>
+                    <td>@m.Allapot</td>
+                    <td>@m.HibaSulyossag</td>
+                    <td>@m.MunkaoraEsztimacio.ToString("F1")</td>
+                    <td>
+                        <a href="/iroda/munkak/@m.Id">Részletek</a>
+
+                        @* Állapot léptetés gomb - csak ha még nem Befejezett *@
+                        @if (m.Allapot != "Befejezett")
+                        {
+                            <button @onclick="() => AllapotLeptetes(m)">
+                                @(m.Allapot == "FelvettMunka" ? "Elkezdés" : "Befejezés")
+                            </button>
+                        }
+
+                        <button @onclick="() => Torles(m.Id)">Törlés</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<MunkaDto>? munkak;
+    private List<UgyfelDto>? ugyfelek;
+    private CreateMunkaDto ujMunka = new();
+
+    // Betöltéskor lekéri a munkákat és az ügyfeleket (a dropdown-hoz)
+    protected override async Task OnInitializedAsync()
+    {
+        await MunkakBetoltese();
+        ugyfelek = await Http.GetFromJsonAsync<List<UgyfelDto>>("api/ugyfelek");
+    }
+
+    private async Task MunkakBetoltese()
+    {
+        munkak = await Http.GetFromJsonAsync<List<MunkaDto>>("api/munkak");
+    }
+
+    // Új munka mentése
+    private async Task UjMunkaMentes()
+    {
+        await Http.PostAsJsonAsync("api/munkak", ujMunka);
+        ujMunka = new();
+        await MunkakBetoltese();
+    }
+
+    // Állapot léptetése a következő szintre
+    private async Task AllapotLeptetes(MunkaDto munka)
+    {
+        // Meghatározzuk a következő állapotot
+        string ujAllapot = munka.Allapot == "FelvettMunka" ? "ElvegzesAlatt" : "Befejezett";
+
+        // PATCH kérés az állapot módosításához
+        await Http.PatchAsync(
+            $"api/munkak/{munka.Id}/allapot",
+            JsonContent.Create(ujAllapot));
+
+        await MunkakBetoltese();
+    }
+
+    // Munka törlése
+    private async Task Torles(int id)
+    {
+        await Http.DeleteAsync($"api/munkak/{id}");
+        await MunkakBetoltese();
+    }
+}

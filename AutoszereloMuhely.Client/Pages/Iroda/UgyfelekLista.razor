@@ -1,0 +1,107 @@
+﻿<h3>UgyfelekLista</h3>
+
+@code {
+
+}
+@* Irodai felület - Ügyfelek listázása, hozzáadása, törlése *@
+@page "/iroda/ugyfelek"
+@inject HttpClient Http
+
+<h3>Megrendelők</h3>
+
+@* Új ügyfél hozzáadása form *@
+<h4>Új megrendelő</h4>
+<EditForm Model="@ujUgyfel" OnValidSubmit="UjUgyfelMentes">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Név:</label>
+        <InputText @bind-Value="ujUgyfel.Nev" />
+    </div>
+    <div>
+        <label>Lakcím:</label>
+        <InputText @bind-Value="ujUgyfel.Lakcim" />
+    </div>
+    <div>
+        <label>Email:</label>
+        <InputText @bind-Value="ujUgyfel.Email" />
+    </div>
+    <button type="submit">Mentés</button>
+</EditForm>
+
+<hr />
+
+@* Ügyfelek listája *@
+@if (ugyfelek == null)
+{
+    <p>Betöltés...</p>
+}
+else if (ugyfelek.Count == 0)
+{
+    <p>Nincs megrendelő.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Név</th>
+                <th>Lakcím</th>
+                <th>Email</th>
+                <th>Műveletek</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in ugyfelek)
+            {
+                <tr>
+                    <td>@u.Id</td>
+                    <td>@u.Nev</td>
+                    <td>@u.Lakcim</td>
+                    <td>@u.Email</td>
+                    <td>
+                        <a href="/iroda/ugyfelek/@u.Id">Szerkesztés</a>
+                        <button @onclick="() => Torles(u.Id)">Törlés</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    // Az ügyfelek listája - null amíg töltődik
+    private List<UgyfelDto>? ugyfelek;
+
+    // Az új ügyfél form modellje
+    private CreateUgyfelDto ujUgyfel = new();
+
+    // Oldal betöltésekor lekéri az összes ügyfelet az API-tól
+    protected override async Task OnInitializedAsync()
+    {
+        await UgyfelekBetoltese();
+    }
+
+    // Ügyfelek lekérése az API-ról
+    private async Task UgyfelekBetoltese()
+    {
+        ugyfelek = await Http.GetFromJsonAsync<List<UgyfelDto>>("api/ugyfelek");
+    }
+
+    // Új ügyfél mentése - a form validáció után hívódik meg
+    private async Task UjUgyfelMentes()
+    {
+        await Http.PostAsJsonAsync("api/ugyfelek", ujUgyfel);
+        ujUgyfel = new(); // Form ürítése
+        await UgyfelekBetoltese(); // Lista frissítése
+    }
+
+    // Ügyfél törlése id alapján
+    private async Task Torles(int id)
+    {
+        await Http.DeleteAsync($"api/ugyfelek/{id}");
+        await UgyfelekBetoltese();
+    }
+}

@@ -4,6 +4,7 @@ using AutoszereloMuhely.Services;
 
 namespace AutoszereloMuhely.Controllers;
 
+// Az ügyfelekhez tartozó API végpontokat kezelő controller
 [ApiController]
 [Route("api/[controller]")]
 public class UgyfelekController : ControllerBase
@@ -12,10 +13,12 @@ public class UgyfelekController : ControllerBase
 
     public UgyfelekController(IUgyfelService service) => _service = service;
 
+    // GET /api/ugyfelek - Összes ügyfél listázása
     [HttpGet]
     public async Task<ActionResult<List<UgyfelDto>>> GetAll()
         => Ok(await _service.GetAllAsync());
 
+    // GET /api/ugyfelek/5 - Egy ügyfél lekérése
     [HttpGet("{id}")]
     public async Task<ActionResult<UgyfelDto>> GetById(int id)
     {
@@ -23,6 +26,7 @@ public class UgyfelekController : ControllerBase
         return ugyfel == null ? NotFound() : Ok(ugyfel);
     }
 
+    // POST /api/ugyfelek - Új ügyfél létrehozása
     [HttpPost]
     public async Task<ActionResult<UgyfelDto>> Create(CreateUgyfelDto dto)
     {
@@ -30,6 +34,7 @@ public class UgyfelekController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    // PUT /api/ugyfelek/5 - Ügyfél adatainak módosítása
     [HttpPut("{id}")]
     public async Task<ActionResult<UgyfelDto>> Update(int id, CreateUgyfelDto dto)
     {
@@ -37,6 +42,7 @@ public class UgyfelekController : ControllerBase
         return result == null ? NotFound() : Ok(result);
     }
 
+    // DELETE /api/ugyfelek/5 - Ügyfél törlése (a munkái is törlődnek - cascade)
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id)
         => await _service.DeleteAsync(id) ? NoContent() : NotFound();

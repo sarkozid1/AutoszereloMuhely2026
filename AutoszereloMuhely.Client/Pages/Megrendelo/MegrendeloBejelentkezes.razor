@@ -1,0 +1,22 @@
+﻿@* Megrendelői felület - Ügyfélszám megadása a munkák megtekintéséhez *@
+@page "/megrendelo"
+@inject NavigationManager Navigation
+
+<h3>Megrendelői felület</h3>
+<p>Adja meg az ügyfélszámát a munkái megtekintéséhez:</p>
+
+<div>
+    <label>Ügyfélszám:</label>
+    <input type="number" @bind="ugyfelId" />
+    <button @onclick="Kereses">Keresés</button>
+</div>
+
+@code {
+    private int ugyfelId;
+
+    // Átirányítás a munkák oldalra az ügyfélszámmal
+    private void Kereses()
+    {
+        Navigation.NavigateTo($"/megrendelo/munkak/{ugyfelId}");
+    }
+}

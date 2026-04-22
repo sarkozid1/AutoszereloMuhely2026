@@ -1,7 +1,5 @@
-﻿namespace AutoszereloMuhely.Dtos;
+﻿namespace AutoszereloMuhely.Client.Models;
 
-// A munka adatait tartalmazó DTO - ezt kapja a kliens válaszként
-// Tartalmazza a munkaóra esztimációt is, amit a backend számol
 public class MunkaDto
 {
     public int Id { get; set; }
@@ -12,7 +10,5 @@ public class MunkaDto
     public string HibaLeiras { get; set; } = string.Empty;
     public int HibaSulyossag { get; set; }
     public string Allapot { get; set; } = string.Empty;
-
-    // A backend által számolt érték - nincs az adatbázisban, mindig frissen generálódik
     public double MunkaoraEsztimacio { get; set; }
 }
