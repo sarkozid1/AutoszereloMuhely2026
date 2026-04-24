@@ -146,7 +146,7 @@ else
     }
 
     // Munka törlése
-    private async Task Torles(int id)
+    private async Task Torles(string id)
     {
         await Http.DeleteAsync($"api/munkak/{id}");
         await MunkakBetoltese();

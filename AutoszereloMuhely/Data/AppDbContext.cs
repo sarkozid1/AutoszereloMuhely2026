@@ -1,40 +1,32 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MongoDB.Driver;
 using AutoszereloMuhely.Models;
+using Microsoft.Extensions.Options;
 
 namespace AutoszereloMuhely.Data;
 
-// Az Entity Framework adatbázis kontextus - ez a "kapu" az adatbázishoz
-// Minden adatbázis művelet ezen keresztül történik
-public class AppDbContext : DbContext
+// MongoDB beállítások - az appsettings.json-ból olvassa be
+public class MongoDbSettings
 {
-    // Konstruktor - a beállításokat (pl. SQLite connection string) kapja meg
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public string ConnectionString { get; set; } = string.Empty;
+    public string DatabaseName { get; set; } = string.Empty;
+}
 
-    // Az Ugyfelek tábla elérése - LINQ-val lekérdezhető
-    public DbSet<Ugyfel> Ugyfelek => Set<Ugyfel>();
+// MongoDB adatbázis kontextus - ez a "kapu" a MongoDB-hez
+// Minden adatbázis művelet ezen keresztül történik
+public class MongoDbContext
+{
+    private readonly IMongoDatabase _database;
 
-    // A Munkak tábla elérése
-    public DbSet<Munka> Munkak => Set<Munka>();
-
-    // Az adatbázis struktúra finomhangolása (Fluent API)
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    // Konstruktor - a beállításokat az appsettings.json-ból kapja meg
+    public MongoDbContext(IOptions<MongoDbSettings> settings)
     {
-        // Munka-Ugyfel kapcsolat beállítása: 1 ügyfél -> több munka
-        // Cascade törlés: ha az ügyfél törlődik, a munkái is törlődnek
-        modelBuilder.Entity<Munka>()
-            .HasOne(m => m.Ugyfel)
-            .WithMany(u => u.Munkak)
-            .HasForeignKey(m => m.UgyfelId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // A Kategoria enum stringként tárolódik az adatbázisban (pl. "Motor")
-        modelBuilder.Entity<Munka>()
-            .Property(m => m.Kategoria)
-            .HasConversion<string>();
-
-        // Az Allapot enum stringként tárolódik (pl. "FelvettMunka")
-        modelBuilder.Entity<Munka>()
-            .Property(m => m.Allapot)
-            .HasConversion<string>();
+        var client = new MongoClient(settings.Value.ConnectionString);
+        _database = client.GetDatabase(settings.Value.DatabaseName);
     }
+
+    // Az Ugyfelek kollekció elérése
+    public IMongoCollection<Ugyfel> Ugyfelek => _database.GetCollection<Ugyfel>("ugyfelek");
+
+    // A Munkak kollekció elérése
+    public IMongoCollection<Munka> Munkak => _database.GetCollection<Munka>("munkak");
 }

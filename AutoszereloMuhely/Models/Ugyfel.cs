@@ -1,12 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
 
 namespace AutoszereloMuhely.Models
 {
-    // Az ügyfél (megrendelő) entitás - ezt tárolja az adatbázis
+    // Az ügyfél (megrendelő) entitás - ezt tárolja a MongoDB adatbázis
     public class Ugyfel
     {
-        // Egyedi azonosító, EF automatikusan generálja (Primary Key)
-        public int Id { get; set; }
+        // Egyedi azonosító - MongoDB ObjectId stringként tárolva
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = string.Empty;
 
         // Ügyfél neve - kötelező, nem lehet üres vagy csak szóköz
         [Required(ErrorMessage = "A név megadása kötelező!")]
@@ -22,8 +26,5 @@ namespace AutoszereloMuhely.Models
         [Required(ErrorMessage = "Az email megadása kötelező.")]
         [EmailAddress(ErrorMessage = "Érvényes email címet adjon meg.")]
         public string Email { get; set; } = string.Empty;
-
-        // Navigációs property - egy ügyfélhez több munka tartozhat (1:N kapcsolat)
-        public ICollection<Munka> Munkak { get; set; } = new List<Munka>();
     }
 }

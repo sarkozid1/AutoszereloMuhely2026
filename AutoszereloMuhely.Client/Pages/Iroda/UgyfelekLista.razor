@@ -99,7 +99,7 @@ else
     }
 
     // Ügyfél törlése id alapján
-    private async Task Torles(int id)
+    private async Task Torles(string id)
     {
         await Http.DeleteAsync($"api/ugyfelek/{id}");
         await UgyfelekBetoltese();

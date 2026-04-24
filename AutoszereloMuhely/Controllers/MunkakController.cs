@@ -23,7 +23,7 @@ public class MunkakController : ControllerBase
 
     // GET /api/munkak/5 - Egy adott munka lekérése
     [HttpGet("{id}")]
-    public async Task<ActionResult<MunkaDto>> GetById(int id)
+    public async Task<ActionResult<MunkaDto>> GetById(string id)
     {
         var munka = await _service.GetByIdAsync(id);
         return munka == null ? NotFound() : Ok(munka); // 404 ha nem létezik, 200 ha igen
@@ -31,7 +31,7 @@ public class MunkakController : ControllerBase
 
     // GET /api/munkak/ugyfel/3 - Egy ügyfél összes munkája (megrendelői felülethez)
     [HttpGet("ugyfel/{ugyfelId}")]
-    public async Task<ActionResult<List<MunkaDto>>> GetByUgyfel(int ugyfelId)
+    public async Task<ActionResult<List<MunkaDto>>> GetByUgyfel(string ugyfelId)
         => Ok(await _service.GetByUgyfelIdAsync(ugyfelId));
 
     // POST /api/munkak - Új munka létrehozása
@@ -45,7 +45,7 @@ public class MunkakController : ControllerBase
 
     // PUT /api/munkak/5 - Meglévő munka módosítása
     [HttpPut("{id}")]
-    public async Task<ActionResult<MunkaDto>> Update(int id, UpdateMunkaDto dto)
+    public async Task<ActionResult<MunkaDto>> Update(string id, UpdateMunkaDto dto)
     {
         var result = await _service.UpdateAsync(id, dto);
         return result == null ? NotFound() : Ok(result);
@@ -54,7 +54,7 @@ public class MunkakController : ControllerBase
     // PATCH /api/munkak/5/allapot - Munka állapotának léptetése
     // Csak előre lehet: FelvettMunka -> ElvegzesAlatt -> Befejezett
     [HttpPatch("{id}/allapot")]
-    public async Task<ActionResult<MunkaDto>> UpdateAllapot(int id, [FromBody] string ujAllapot)
+    public async Task<ActionResult<MunkaDto>> UpdateAllapot(string id, [FromBody] string ujAllapot)
     {
         var result = await _service.UpdateAllapotAsync(id, ujAllapot);
         return result == null ? NotFound() : Ok(result);
@@ -63,6 +63,6 @@ public class MunkakController : ControllerBase
     // DELETE /api/munkak/5 - Munka törlése
     // 204 NoContent ha sikerült, 404 ha nem létezett
     [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(int id)
+    public async Task<ActionResult> Delete(string id)
         => await _service.DeleteAsync(id) ? NoContent() : NotFound();
 }

@@ -7,7 +7,7 @@ namespace AutoszereloMuhely.Dtos;
 public class CreateMunkaDto
 {
     [Required]
-    public int UgyfelId { get; set; }
+    public string UgyfelId { get; set; } = string.Empty;
 
     [Required]
     [RegularExpression(@"^[A-Z]{3}-\d{3}$")]
