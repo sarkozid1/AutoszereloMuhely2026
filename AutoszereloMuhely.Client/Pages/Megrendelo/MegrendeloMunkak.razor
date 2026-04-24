@@ -1,5 +1,5 @@
 ﻿@* Megrendelői felület - Az ügyfélhez tartozó munkák listája *@
-@page "/megrendelo/munkak/{UgyfelId:int}"
+@page "/megrendelo/munkak/{UgyfelId}"
 @inject HttpClient Http
 
 <h3>Az Ön munkái</h3>
@@ -46,7 +46,7 @@ else
 @code {
     // Az URL-ből kapott ügyfélszám
     [Parameter]
-    public int UgyfelId { get; set; }
+    public string UgyfelId { get; set; } = string.Empty;
 
     private List<MunkaDto>? munkak;
 

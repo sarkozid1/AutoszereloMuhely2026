@@ -1,19 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
 
 namespace AutoszereloMuhely.Models
 {
-    // A szerelési munka entitás - ezt tárolja az adatbázis
+    // A szerelési munka entitás - ezt tárolja a MongoDB adatbázis
     public class Munka
     {
-        // Egyedi azonosító, EF automatikusan generálja (Primary Key)
-        public int Id { get; set; }
+        // Egyedi azonosító - MongoDB ObjectId stringként tárolva
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = string.Empty;
 
-        // Idegen kulcs (Foreign Key) - melyik ügyfélhez tartozik ez a munka
+        // Az ügyfél ObjectId referenciája
         [Required]
-        public int UgyfelId { get; set; }
-
-        // Navigációs property - az ügyfél objektum, akit az UgyfelId hivatkozik
-        public Ugyfel? Ugyfel { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UgyfelId { get; set; } = string.Empty;
 
         // Rendszám - kötelező, formátum: XXX-YYY (3 nagybetű, kötőjel, 3 szám)
         [Required(ErrorMessage = "A rendszám megadása kötelező.")]

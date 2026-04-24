@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using MongoDB.Driver;
 using AutoszereloMuhely.Data;
 using AutoszereloMuhely.Dtos;
 using AutoszereloMuhely.Models;
@@ -6,110 +6,106 @@ using AutoszereloMuhely.Models;
 namespace AutoszereloMuhely.Services;
 
 // A munkák üzleti logikáját megvalósító service
-// A DbContext-en keresztül kommunikál az adatbázissal
+// A MongoDbContext-en keresztül kommunikál az adatbázissal
 public class MunkaService : IMunkaService
 {
-    private readonly AppDbContext _context;           // Adatbázis elérés
-    private readonly IMunkaoraService _munkaoraService; // Esztimáció számításhoz
+    private readonly IMongoCollection<Munka> _munkak;
+    private readonly IMunkaoraService _munkaoraService;
 
     // Konstruktor - Dependency Injection-nel kapja meg a függőségeket
-    public MunkaService(AppDbContext context, IMunkaoraService munkaoraService)
+    public MunkaService(MongoDbContext context, IMunkaoraService munkaoraService)
     {
-        _context = context;
+        _munkak = context.Munkak;
         _munkaoraService = munkaoraService;
     }
 
     // Összes munka lekérése az adatbázisból, DTO-vá alakítva
     public async Task<List<MunkaDto>> GetAllAsync()
     {
-        var munkak = await _context.Munkak.ToListAsync();
+        var munkak = await _munkak.Find(_ => true).ToListAsync();
         return munkak.Select(MapToDto).ToList();
     }
 
     // Egy munka lekérése id alapján - null-t ad vissza ha nem létezik
-    public async Task<MunkaDto?> GetByIdAsync(int id)
+    public async Task<MunkaDto?> GetByIdAsync(string id)
     {
-        var munka = await _context.Munkak.FindAsync(id);
+        var munka = await _munkak.Find(m => m.Id == id).FirstOrDefaultAsync();
         return munka == null ? null : MapToDto(munka);
     }
 
     // Egy adott ügyfélhez tartozó összes munka lekérése (megrendelői felülethez)
-    public async Task<List<MunkaDto>> GetByUgyfelIdAsync(int ugyfelId)
+    public async Task<List<MunkaDto>> GetByUgyfelIdAsync(string ugyfelId)
     {
-        var munkak = await _context.Munkak
-            .Where(m => m.UgyfelId == ugyfelId) // Szűrés ügyfél id-re
-            .ToListAsync();
+        var munkak = await _munkak.Find(m => m.UgyfelId == ugyfelId).ToListAsync();
         return munkak.Select(MapToDto).ToList();
     }
 
     // Új munka létrehozása - az állapot automatikusan FelvettMunka lesz
     public async Task<MunkaDto> CreateAsync(CreateMunkaDto dto)
     {
-        // DTO-ból Munka entitás létrehozása
         var munka = new Munka
         {
             UgyfelId = dto.UgyfelId,
             Rendszam = dto.Rendszam,
             GyartasiEv = dto.GyartasiEv,
-            Kategoria = Enum.Parse<MunkaKategoria>(dto.Kategoria), // String -> enum konverzió
+            Kategoria = Enum.Parse<MunkaKategoria>(dto.Kategoria),
             HibaLeiras = dto.HibaLeiras,
             HibaSulyossag = dto.HibaSulyossag,
-            Allapot = MunkaAllapot.FelvettMunka // Új munka mindig "Felvett" állapotban indul
+            Allapot = MunkaAllapot.FelvettMunka
         };
 
-        _context.Munkak.Add(munka);        // Hozzáadás a kontextushoz
-        await _context.SaveChangesAsync();  // Mentés az adatbázisba
-        return MapToDto(munka);             // Visszaadás DTO-ként
+        await _munkak.InsertOneAsync(munka);
+        return MapToDto(munka);
     }
 
     // Meglévő munka adatainak módosítása
-    public async Task<MunkaDto?> UpdateAsync(int id, UpdateMunkaDto dto)
+    public async Task<MunkaDto?> UpdateAsync(string id, UpdateMunkaDto dto)
     {
-        var munka = await _context.Munkak.FindAsync(id);
-        if (munka == null) return null; // Ha nem létezik, null-t ad vissza
+        var filter = Builders<Munka>.Filter.Eq(m => m.Id, id);
+        var update = Builders<Munka>.Update
+            .Set(m => m.Rendszam, dto.Rendszam)
+            .Set(m => m.GyartasiEv, dto.GyartasiEv)
+            .Set(m => m.Kategoria, Enum.Parse<MunkaKategoria>(dto.Kategoria))
+            .Set(m => m.HibaLeiras, dto.HibaLeiras)
+            .Set(m => m.HibaSulyossag, dto.HibaSulyossag);
 
-        // Mezők frissítése
-        munka.Rendszam = dto.Rendszam;
-        munka.GyartasiEv = dto.GyartasiEv;
-        munka.Kategoria = Enum.Parse<MunkaKategoria>(dto.Kategoria);
-        munka.HibaLeiras = dto.HibaLeiras;
-        munka.HibaSulyossag = dto.HibaSulyossag;
-
-        await _context.SaveChangesAsync();
-        return MapToDto(munka);
+        var result = await _munkak.FindOneAndUpdateAsync(
+            filter, update, new FindOneAndUpdateOptions<Munka> { ReturnDocument = ReturnDocument.After });
+        return result == null ? null : MapToDto(result);
     }
 
     // Állapot léptetése - CSAK előre lehet lépni (FelvettMunka -> ElvegzesAlatt -> Befejezett)
-    public async Task<MunkaDto?> UpdateAllapotAsync(int id, string ujAllapot)
+    public async Task<MunkaDto?> UpdateAllapotAsync(string id, string ujAllapot)
     {
-        var munka = await _context.Munkak.FindAsync(id);
+        var munka = await _munkak.Find(m => m.Id == id).FirstOrDefaultAsync();
         if (munka == null) return null;
 
         var ujAllapotEnum = Enum.Parse<MunkaAllapot>(ujAllapot);
-
-        // Ellenőrzés: az új állapot számértéke nagyobb kell legyen, mint a jelenlegi
-        // Pl. FelvettMunka(0) -> ElvegzesAlatt(1) OK, de ElvegzesAlatt(1) -> FelvettMunka(0) TILOS
         if ((int)ujAllapotEnum <= (int)munka.Allapot)
             throw new InvalidOperationException("Az állapot csak előre léptethető.");
 
-        munka.Allapot = ujAllapotEnum;
-        await _context.SaveChangesAsync();
-        return MapToDto(munka);
+        var filter = Builders<Munka>.Filter.Eq(m => m.Id, id);
+        var update = Builders<Munka>.Update.Set(m => m.Allapot, ujAllapotEnum);
+
+        var result = await _munkak.FindOneAndUpdateAsync(
+            filter, update, new FindOneAndUpdateOptions<Munka> { ReturnDocument = ReturnDocument.After });
+        return result == null ? null : MapToDto(result);
     }
 
     // Munka törlése - true ha sikerült, false ha nem létezett
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(string id)
     {
-        var munka = await _context.Munkak.FindAsync(id);
-        if (munka == null) return false;
+        var result = await _munkak.DeleteOneAsync(m => m.Id == id);
+        return result.DeletedCount > 0;
+    }
 
-        _context.Munkak.Remove(munka);
-        await _context.SaveChangesAsync();
-        return true;
+    // Egy ügyfél összes munkájának törlése (cascade delete helyett, mikor az ügyfél törlődik)
+    public async Task DeleteByUgyfelIdAsync(string ugyfelId)
+    {
+        await _munkak.DeleteManyAsync(m => m.UgyfelId == ugyfelId);
     }
 
     // Segédmetódus: Munka entitásból MunkaDto-t készít
-    // Itt történik a munkaóra esztimáció kiszámítása is
     private MunkaDto MapToDto(Munka munka)
     {
         return new MunkaDto
@@ -118,10 +114,10 @@ public class MunkaService : IMunkaService
             UgyfelId = munka.UgyfelId,
             Rendszam = munka.Rendszam,
             GyartasiEv = munka.GyartasiEv,
-            Kategoria = munka.Kategoria.ToString(),   // Enum -> string (pl. "Motor")
+            Kategoria = munka.Kategoria.ToString(),
             HibaLeiras = munka.HibaLeiras,
             HibaSulyossag = munka.HibaSulyossag,
-            Allapot = munka.Allapot.ToString(),       // Enum -> string (pl. "FelvettMunka")
+            Allapot = munka.Allapot.ToString(),
             MunkaoraEsztimacio = _munkaoraService.Szamol(
                 munka.Kategoria.ToString(), munka.GyartasiEv, munka.HibaSulyossag)
         };

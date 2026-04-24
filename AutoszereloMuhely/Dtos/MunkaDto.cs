@@ -4,8 +4,8 @@
 // Tartalmazza a munkaóra esztimációt is, amit a backend számol
 public class MunkaDto
 {
-    public int Id { get; set; }
-    public int UgyfelId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UgyfelId { get; set; } = string.Empty;
     public string Rendszam { get; set; } = string.Empty;
     public int GyartasiEv { get; set; }
     public string Kategoria { get; set; } = string.Empty;

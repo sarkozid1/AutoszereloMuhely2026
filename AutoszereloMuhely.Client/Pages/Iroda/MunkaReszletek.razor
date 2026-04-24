@@ -1,5 +1,5 @@
 ﻿@* Irodai felület - Egy munka részletes adatai és szerkesztése *@
-@page "/iroda/munkak/{Id:int}"
+@page "/iroda/munkak/{Id}"
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -60,7 +60,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     private MunkaDto? munka;
     private UpdateMunkaDto szerkesztes = new();

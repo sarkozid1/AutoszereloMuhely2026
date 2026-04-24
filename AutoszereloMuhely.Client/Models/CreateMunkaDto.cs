@@ -5,7 +5,7 @@ namespace AutoszereloMuhely.Client.Models;
 public class CreateMunkaDto
 {
     [Required(ErrorMessage = "Az ügyfél kiválasztása kötelező.")]
-    public int UgyfelId { get; set; }
+    public string UgyfelId { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "A rendszám megadása kötelező.")]
     [RegularExpression(@"^[A-Z]{3}-[0-9]{3}$",

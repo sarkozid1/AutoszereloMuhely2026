@@ -1,6 +1,5 @@
 using AutoszereloMuhely.Data;
 using AutoszereloMuhely.Services;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,10 +12,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Entity Framework beállítása SQLite adatbázissal
-// Az autoszerelo.db fájl a projekt mappájában jön létre
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=autoszerelo.db"));
+// MongoDB beállítások betöltése az appsettings.json-ból
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDB"));
+
+// MongoDB kontextus regisztrálása Singleton ként (az adatbázis kapcsolat hosszú életű)
+builder.Services.AddSingleton<MongoDbContext>();
 
 // Saját service-ek regisztrálása
 // AddScoped = minden HTTP kérésnél új példány jön létre

@@ -7,12 +7,12 @@
 
 <div>
     <label>Ügyfélszám:</label>
-    <input type="number" @bind="ugyfelId" />
+    <input type="text" @bind="ugyfelId" />
     <button @onclick="Kereses">Keresés</button>
 </div>
 
 @code {
-    private int ugyfelId;
+    private string ugyfelId = string.Empty;
 
     // Átirányítás a munkák oldalra az ügyfélszámmal
     private void Kereses()
