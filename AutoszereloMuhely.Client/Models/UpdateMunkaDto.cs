@@ -23,4 +23,4 @@ public class UpdateMunkaDto
     [Required(ErrorMessage = "A súlyosság megadása kötelező.")]
     [Range(1, 10, ErrorMessage = "1 és 10 között legyen.")]
     public int HibaSulyossag { get; set; }
-}   
+}

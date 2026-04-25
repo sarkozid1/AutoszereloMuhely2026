@@ -7,17 +7,22 @@
 <div class="nav-scrollable">
     <nav class="flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/iroda/ugyfelek">
-                Irodai - Megrendelők
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                Főoldal
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/iroda/munkak">
-                Irodai - Munkák
+            <NavLink class="nav-link" href="/iroda/ugyfelek" Match="NavLinkMatch.Prefix">
+                Megrendelők
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/megrendelo">
+            <NavLink class="nav-link" href="/iroda/munkak" Match="NavLinkMatch.Prefix">
+                Munkák
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/megrendelo" Match="NavLinkMatch.Prefix">
                 Megrendelői felület
             </NavLink>
         </div>

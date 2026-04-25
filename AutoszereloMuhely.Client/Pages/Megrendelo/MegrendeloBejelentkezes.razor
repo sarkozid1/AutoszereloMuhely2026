@@ -1,22 +1,53 @@
-﻿@* Megrendelői felület - Ügyfélszám megadása a munkák megtekintéséhez *@
-@page "/megrendelo"
+﻿@page "/megrendelo"
+@inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3>Megrendelői felület</h3>
-<p>Adja meg az ügyfélszámát a munkái megtekintéséhez:</p>
+<div class="login-box">
+    <div class="card" style="padding: 32px;">
+        <h3>Megrendelői felület</h3>
+        <p style="color: #718096;">Válassza ki a nevet a munkái megtekintésehez:</p>
 
-<div>
-    <label>Ügyfélszám:</label>
-    <input type="text" @bind="ugyfelId" />
-    <button @onclick="Kereses">Keresés</button>
+        @if (ugyfelek == null)
+        {
+            <p class="loading">Betöltés...</p>
+        }
+        else if (ugyfelek.Count == 0)
+        {
+            <p class="empty-state">Nincs regisztrált megrendelő.</p>
+        }
+        else
+        {
+            <div class="form-group" style="max-width: 100%;">
+                <select @bind="valasztottId" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 1rem;">
+                    <option value="">-- Válasszon ügyfelet --</option>
+                    @foreach (var u in ugyfelek)
+                    {
+                        <option value="@u.Id">@u.Nev (@u.Email)</option>
+                    }
+                </select>
+            </div>
+            <button class="btn btn-primary" style="padding: 10px 24px;" @onclick="Kereses"
+                    disabled="@(string.IsNullOrEmpty(valasztottId))">
+                Munkák megtekintése
+            </button>
+        }
+    </div>
 </div>
 
 @code {
-    private string ugyfelId = string.Empty;
+    private List<UgyfelDto>? ugyfelek;
+    private string valasztottId = string.Empty;
 
-    // Átirányítás a munkák oldalra az ügyfélszámmal
+    protected override async Task OnInitializedAsync()
+    {
+        ugyfelek = await Http.GetFromJsonAsync<List<UgyfelDto>>("api/ugyfelek");
+    }
+
     private void Kereses()
     {
-        Navigation.NavigateTo($"/megrendelo/munkak/{ugyfelId}");
+        if (!string.IsNullOrEmpty(valasztottId))
+        {
+            Navigation.NavigateTo($"/megrendelo/munkak/{valasztottId}");
+        }
     }
 }

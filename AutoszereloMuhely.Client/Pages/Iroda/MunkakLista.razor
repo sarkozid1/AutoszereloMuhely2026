@@ -1,117 +1,122 @@
-﻿@* Irodai felület - Munkák listázása, hozzáadása, állapotléptetés, törlés *@
-@page "/iroda/munkak"
+﻿@page "/iroda/munkak"
 @inject HttpClient Http
 
 <h3>Munkák</h3>
 
-@* Új munka hozzáadása form *@
-<h4>Új munka</h4>
-<EditForm Model="@ujMunka" OnValidSubmit="UjMunkaMentes">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="card">
+    <h4>Új munka rögzítése</h4>
+    <EditForm Model="@ujMunka" OnValidSubmit="Mentes">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="validation-errors" />
 
-    <div>
-        <label>Ügyfél:</label>
-        <InputSelect @bind-Value="ujMunka.UgyfelId">
-            <option value="0">-- Válassz ügyfelet --</option>
-            @if (ugyfelek != null)
-            {
-                @foreach (var u in ugyfelek)
+        <div class="form-group">
+            <label>Ügyfél</label>
+            <InputSelect @bind-Value="ujMunka.UgyfelId">
+                <option value="">-- Válassz ügyfelet --</option>
+                @if (ugyfelek != null)
                 {
-                    <option value="@u.Id">@u.Nev</option>
+                    @foreach (var u in ugyfelek)
+                    {   
+                        <option value="@u.Id">@u.Nev</option>
+                    }
                 }
-            }
-        </InputSelect>
-    </div>
-    <div>
-        <label>Rendszám (XXX-YYY):</label>
-        <InputText @bind-Value="ujMunka.Rendszam" />
-    </div>
-    <div>
-        <label>Gyártási év:</label>
-        <InputNumber @bind-Value="ujMunka.GyartasiEv" />
-    </div>
-    <div>
-        <label>Kategória:</label>
-        <InputSelect @bind-Value="ujMunka.Kategoria">
-            <option value="">-- Válassz --</option>
-            <option value="Karosszeria">Karosszéria</option>
-            <option value="Motor">Motor</option>
-            <option value="Futomu">Futómű</option>
-            <option value="Fekberendezes">Fékberendezés</option>
-        </InputSelect>
-    </div>
-    <div>
-        <label>Hiba leírása:</label>
-        <InputText @bind-Value="ujMunka.HibaLeiras" />
-    </div>
-    <div>
-        <label>Súlyosság (1-10):</label>
-        <InputNumber @bind-Value="ujMunka.HibaSulyossag" />
-    </div>
-    <button type="submit">Mentés</button>
-</EditForm>
+            </InputSelect>
+        </div>
+        <div class="form-group">
+            <label>Rendszám (pl. ABC-123)</label>
+            <InputText @bind-Value="ujMunka.Rendszam" />
+            <ValidationMessage For="@(() => ujMunka.Rendszam)" />
+        </div>
+        <div class="form-group">
+            <label>Gyártási év</label>
+            <InputNumber @bind-Value="ujMunka.GyartasiEv" />
+            <ValidationMessage For="@(() => ujMunka.GyartasiEv)" />
+        </div>
+        <div class="form-group">
+            <label>Kategória</label>
+            <InputSelect @bind-Value="ujMunka.Kategoria">
+                <option value="">-- Válassz --</option>
+                <option value="Karosszéria">Karosszeria</option>
+                <option value="Motor">Motor</option>
+                <option value="Futómű">Futomu</option>
+                <option value="Fékberendezés">Fekberendezes</option>
+            </InputSelect>
+        </div>
+        <div class="form-group">
+            <label>Hiba leírása</label>
+            <InputText @bind-Value="ujMunka.HibaLeiras" />
+            <ValidationMessage For="@(() => ujMunka.HibaLeiras)" />
+        </div>
+        <div class="form-group">
+            <label>Súlyosság (1-10)</label>
+            <InputNumber @bind-Value="ujMunka.HibaSulyossag" />
+            <ValidationMessage For="@(() => ujMunka.HibaSulyossag)" />
+        </div>
+        <button type="submit" class="btn btn-primary">Mentes</button>
+    </EditForm>
+</div>
 
-<hr />
+<div class="card">
+    <h4>Munkák listája</h4>
 
-@* Munkák listája *@
-@if (munkak == null)
-{
-    <p>Betöltés...</p>
-}
-else if (munkak.Count == 0)
-{
-    <p>Nincs munka.</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Rendszám</th>
-                <th>Kategória</th>
-                <th>Állapot</th>
-                <th>Súlyosság</th>
-                <th>Esztimáció (óra)</th>
-                <th>Műveletek</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var m in munkak)
-            {
+    @if (munkak == null)
+    {
+        <p class="loading">Betöltes...</p>
+    }
+    else if (munkak.Count == 0)
+    {
+        <p class="empty-state">Nincs munka rögzítve.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td>@m.Id</td>
-                    <td>@m.Rendszam</td>
-                    <td>@m.Kategoria</td>
-                    <td>@m.Allapot</td>
-                    <td>@m.HibaSulyossag</td>
-                    <td>@m.MunkaoraEsztimacio.ToString("F1")</td>
-                    <td>
-                        <a href="/iroda/munkak/@m.Id">Részletek</a>
-
-                        @* Állapot léptetés gomb - csak ha még nem Befejezett *@
-                        @if (m.Allapot != "Befejezett")
-                        {
-                            <button @onclick="() => AllapotLeptetes(m)">
-                                @(m.Allapot == "FelvettMunka" ? "Elkezdés" : "Befejezés")
-                            </button>
-                        }
-
-                        <button @onclick="() => Torles(m.Id)">Törlés</button>
-                    </td>
+                    <th>Rendszám</th>
+                    <th>Kategória</th>
+                    <th>Állapot</th>
+                    <th>Súlyossag</th>
+                    <th>Esztimácio</th>
+                    <th>Műveletek</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var m in munkak)
+                {
+                    <tr>
+                        <td>@m.Rendszam</td>
+                        <td>@m.Kategoria</td>
+                        <td>
+                            <span class="badge @BadgeClass(m.Allapot)">
+                                @AllapotNev(m.Allapot)
+                            </span>
+                        </td>
+                        <td>@m.HibaSulyossag / 10</td>
+                        <td><span class="esztimacio">@m.MunkaoraEsztimacio.ToString("F1") ora</span></td>
+                        <td>
+                            <a href="/iroda/munkak/@m.Id" class="btn btn-secondary btn-sm">Reszletek</a>
+
+                            @if (m.Allapot != "Befejezett")
+                            {
+                                <button class="btn btn-success btn-sm" @onclick="() => Leptet(m)">
+                                    @(m.Allapot == "FelvettMunka" ? "Elkezdes" : "Befejezes")
+                                </button>
+                            }
+
+                            <button class="btn btn-danger btn-sm" @onclick="() => Torles(m.Id)">Torles</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
     private List<MunkaDto>? munkak;
     private List<UgyfelDto>? ugyfelek;
     private CreateMunkaDto ujMunka = new();
 
-    // Betöltéskor lekéri a munkákat és az ügyfeleket (a dropdown-hoz)
     protected override async Task OnInitializedAsync()
     {
         await MunkakBetoltese();
@@ -123,32 +128,39 @@ else
         munkak = await Http.GetFromJsonAsync<List<MunkaDto>>("api/munkak");
     }
 
-    // Új munka mentése
-    private async Task UjMunkaMentes()
+    private async Task Mentes()
     {
         await Http.PostAsJsonAsync("api/munkak", ujMunka);
         ujMunka = new();
         await MunkakBetoltese();
     }
 
-    // Állapot léptetése a következő szintre
-    private async Task AllapotLeptetes(MunkaDto munka)
+    private async Task Leptet(MunkaDto munka)
     {
-        // Meghatározzuk a következő állapotot
-        string ujAllapot = munka.Allapot == "FelvettMunka" ? "ElvegzesAlatt" : "Befejezett";
-
-        // PATCH kérés az állapot módosításához
-        await Http.PatchAsync(
-            $"api/munkak/{munka.Id}/allapot",
-            JsonContent.Create(ujAllapot));
-
+        string uj = munka.Allapot == "FelvettMunka" ? "ElvegzesAlatt" : "Befejezett";
+        await Http.PatchAsync($"api/munkak/{munka.Id}/allapot", JsonContent.Create(uj));
         await MunkakBetoltese();
     }
 
-    // Munka törlése
     private async Task Torles(string id)
     {
         await Http.DeleteAsync($"api/munkak/{id}");
         await MunkakBetoltese();
     }
+
+    private string AllapotNev(string a) => a switch
+    {
+        "FelvettMunka" => "Felvett",
+        "ElvegzesAlatt" => "Folyamatban",
+        "Befejezett" => "Befejezett",
+        _ => a
+    };
+
+    private string BadgeClass(string a) => a switch
+    {
+        "FelvettMunka" => "badge-felvett",
+        "ElvegzesAlatt" => "badge-folyamatban",
+        "Befejezett" => "badge-befejezett",
+        _ => ""
+    };
 }

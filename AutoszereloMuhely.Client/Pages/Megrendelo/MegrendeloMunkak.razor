@@ -1,58 +1,77 @@
-﻿@* Megrendelői felület - Az ügyfélhez tartozó munkák listája *@
-@page "/megrendelo/munkak/{UgyfelId}"
+﻿@page "/megrendelo/munkak/{UgyfelId}"
 @inject HttpClient Http
 
-<h3>Az Ön munkái</h3>
+<h3>Az ön munkái</h3>
 
 @if (munkak == null)
 {
-    <p>Betöltés...</p>
+    <p class="loading">Betöltés...</p>
 }
 else if (munkak.Count == 0)
 {
-    <p>Nincs munka ehhez az ügyfélszámhoz.</p>
+    <div class="card">
+        <p class="empty-state">Nincs munka ehhez az ügyfélhez.</p>
+    </div>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Rendszám</th>
-                <th>Kategória</th>
-                <th>Hiba leírása</th>
-                <th>Súlyosság</th>
-                <th>Állapot</th>
-                <th>Esztimáció (óra)</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var m in munkak)
-            {
+    <div class="card">
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td>@m.Rendszam</td>
-                    <td>@m.Kategoria</td>
-                    <td>@m.HibaLeiras</td>
-                    <td>@m.HibaSulyossag</td>
-                    <td>@m.Allapot</td>
-                    <td>@m.MunkaoraEsztimacio.ToString("F1")</td>
+                    <th>Rendszám</th>
+                    <th>Kategória</th>
+                    <th>Hiba leírasa</th>
+                    <th>Súlyossag</th>
+                    <th>Állapot</th>
+                    <th>Becslés</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var m in munkak)
+                {
+                    <tr>
+                        <td>@m.Rendszam</td>
+                        <td>@m.Kategoria</td>
+                        <td>@m.HibaLeiras</td>
+                        <td>@m.HibaSulyossag / 10</td>
+                        <td>
+                            <span class="badge @BadgeClass(m.Allapot)">@AllapotNev(m.Allapot)</span>
+                        </td>
+                        <td><span class="esztimacio">@m.MunkaoraEsztimacio.ToString("F1") ora</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
-<a href="/megrendelo">Vissza</a>
+<a href="/megrendelo" class="btn btn-secondary">Vissza</a>
 
 @code {
-    // Az URL-ből kapott ügyfélszám
     [Parameter]
     public string UgyfelId { get; set; } = string.Empty;
 
     private List<MunkaDto>? munkak;
 
-    // Betöltéskor lekéri az ügyfél munkáit
     protected override async Task OnInitializedAsync()
     {
         munkak = await Http.GetFromJsonAsync<List<MunkaDto>>($"api/munkak/ugyfel/{UgyfelId}");
     }
+
+    private string AllapotNev(string a) => a switch
+    {
+        "FelvettMunka" => "Felvett",
+        "ElvegzesAlatt" => "Folyamatban",
+        "Befejezett" => "Befejezett",
+        _ => a
+    };
+
+    private string BadgeClass(string a) => a switch
+    {
+        "FelvettMunka" => "badge-felvett",
+        "ElvegzesAlatt" => "badge-folyamatban",
+        "Befejezett" => "badge-befejezett",
+        _ => ""
+    };
 }
