@@ -1,8 +1,3 @@
-﻿<h3>UgyfelekLista</h3>
-
-@code {
-
-}
 @* Irodai felület - Ügyfelek listázása, hozzáadása, törlése *@
 @page "/iroda/ugyfelek"
 @attribute [Authorize(Roles = "Dolgozo,Adminisztrator")]
@@ -10,99 +5,95 @@
 
 <h3>Megrendelők</h3>
 
-@* Új ügyfél hozzáadása form *@
-<h4>Új megrendelő</h4>
-<EditForm Model="@ujUgyfel" OnValidSubmit="UjUgyfelMentes">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="card">
+    <h4>Új megrendelő</h4>
+    <EditForm Model="@ujUgyfel" OnValidSubmit="Mentes">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="validation-errors" />
 
-    <div>
-        <label>Név:</label>
-        <InputText @bind-Value="ujUgyfel.Nev" />
-    </div>
-    <div>
-        <label>Lakcím:</label>
-        <InputText @bind-Value="ujUgyfel.Lakcim" />
-    </div>
-    <div>
-        <label>Email:</label>
-        <InputText @bind-Value="ujUgyfel.Email" />
-    </div>
-    <button type="submit">Mentés</button>
-</EditForm>
+        <div class="form-group">
+            <label>Név</label>
+            <InputText @bind-Value="ujUgyfel.Nev" />
+            <ValidationMessage For="@(() => ujUgyfel.Nev)" />
+        </div>
+        <div class="form-group">
+            <label>Lakcím</label>
+            <InputText @bind-Value="ujUgyfel.Lakcim" />
+            <ValidationMessage For="@(() => ujUgyfel.Lakcim)" />
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <InputText @bind-Value="ujUgyfel.Email" />
+            <ValidationMessage For="@(() => ujUgyfel.Email)" />
+        </div>
+        <button type="submit" class="btn btn-primary">Mentes</button>
+    </EditForm>
+</div>
 
-<hr />
+<div class="card">
+    <h4>Megrendelők listája</h4>
 
-@* Ügyfelek listája *@
-@if (ugyfelek == null)
-{
-    <p>Betöltés...</p>
-}
-else if (ugyfelek.Count == 0)
-{
-    <p>Nincs megrendelő.</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Név</th>
-                <th>Lakcím</th>
-                <th>Email</th>
-                <th>Műveletek</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var u in ugyfelek)
-            {
+    @if (ugyfelek == null)
+    {
+        <p class="loading">Betöltes...</p>
+    }
+    else if (ugyfelek.Count == 0)
+    {
+        <p class="empty-state">Nincs megrendelő.</p>
+    }
+    else
+    {
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td>@u.Id</td>
-                    <td>@u.Nev</td>
-                    <td>@u.Lakcim</td>
-                    <td>@u.Email</td>
-                    <td>
-                        <a href="/iroda/ugyfelek/@u.Id">Szerkesztés</a>
-                        <button @onclick="() => Torles(u.Id)">Törlés</button>
-                    </td>
+                    <th>Név</th>
+                    <th>Lakcím</th>
+                    <th>Email</th>
+                    <th>Műveletek</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var u in ugyfelek)
+                {
+                    <tr>
+                        <td>@u.Nev</td>
+                        <td>@u.Lakcim</td>
+                        <td>@u.Email</td>
+                        <td>
+                            <a href="/iroda/ugyfelek/@u.Id" class="btn btn-secondary btn-sm">Szerkesztés</a>
+                            <button class="btn btn-danger btn-sm" @onclick="() => Torles(u.Id)">Törles</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
-    // Az ügyfelek listája - null amíg töltődik
     private List<UgyfelDto>? ugyfelek;
-
-    // Az új ügyfél form modellje
     private CreateUgyfelDto ujUgyfel = new();
 
-    // Oldal betöltésekor lekéri az összes ügyfelet az API-tól
     protected override async Task OnInitializedAsync()
     {
-        await UgyfelekBetoltese();
+        await Betoltes();
     }
 
-    // Ügyfelek lekérése az API-ról
-    private async Task UgyfelekBetoltese()
+    private async Task Betoltes()
     {
         ugyfelek = await Http.GetFromJsonAsync<List<UgyfelDto>>("api/ugyfelek");
     }
 
-    // Új ügyfél mentése - a form validáció után hívódik meg
-    private async Task UjUgyfelMentes()
+    private async Task Mentes()
     {
         await Http.PostAsJsonAsync("api/ugyfelek", ujUgyfel);
-        ujUgyfel = new(); // Form ürítése
-        await UgyfelekBetoltese(); // Lista frissítése
+        ujUgyfel = new();
+        await Betoltes();
     }
 
-    // Ügyfél törlése id alapján
     private async Task Torles(string id)
     {
         await Http.DeleteAsync($"api/ugyfelek/{id}");
-        await UgyfelekBetoltese();
+        await Betoltes();
     }
 }
