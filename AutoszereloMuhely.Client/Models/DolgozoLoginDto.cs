@@ -1,0 +1,13 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AutoszereloMuhely.Client.Models;
+
+// Bejelentkezéshez szükséges adatok
+public class DolgozoLoginDto
+{
+    [Required(ErrorMessage = "A felhasználónév megadása kötelező.")]
+    public string Felhasznalonev { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "A jelszó megadása kötelező.")]
+    public string Jelszo { get; set; } = string.Empty;
+}

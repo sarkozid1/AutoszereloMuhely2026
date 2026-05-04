@@ -1,0 +1,62 @@
+﻿@page "/iroda"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<div class="login-box">
+    <div class="card" style="padding: 32px;">
+        <h3>Irodai belépés</h3>
+        <p style="color: #718096;">Jelentkezzen be a munkák kezeléséhez.</p>
+
+        @if (!string.IsNullOrEmpty(hibaUzenet))
+        {
+            <p class="validation-errors">@hibaUzenet</p>
+        }
+
+        <EditForm Model="@loginDto" OnValidSubmit="Belepes">
+            <DataAnnotationsValidator />
+
+            <div class="form-group" style="max-width: 100%;">
+                <label>Felhasználónév</label>
+                <InputText @bind-Value="loginDto.Felhasznalonev"
+                           style="width: 100%;" />
+                <ValidationMessage For="@(() => loginDto.Felhasznalonev)" />
+            </div>
+            <div class="form-group" style="max-width: 100%;">
+                <label>Jelszó</label>
+                <InputText @bind-Value="loginDto.Jelszo" type="password"
+                           style="width: 100%;" />
+                <ValidationMessage For="@(() => loginDto.Jelszo)" />
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    style="padding: 10px 24px; width: 100%;">
+                Belépés
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    // Bejelentkezési adatok tárolása
+    private DolgozoLoginDto loginDto = new();
+    // Hibaüzenet tárolása
+    private string hibaUzenet = string.Empty;
+
+    // Bejelentkezési logika
+    private async Task Belepes()
+    {
+        hibaUzenet = string.Empty;
+
+        // POST kérés a backend login végpontra
+        var response = await Http.PostAsJsonAsync("api/auth/login", loginDto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/iroda/ugyfelek");
+        }
+        else
+        {
+            hibaUzenet = "Hibás felhasználónév vagy jelszó!";
+            loginDto.Jelszo = string.Empty;
+        }
+    }
+}
