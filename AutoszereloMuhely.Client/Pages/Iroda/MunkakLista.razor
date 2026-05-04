@@ -1,5 +1,6 @@
 ﻿@* Irodai felület - Munkák listázása, hozzáadása, állapotléptetés, törlés *@
 @page "/iroda/munkak"
+@attribute [Authorize(Roles = "Dolgozo,Adminisztrator")]
 @inject HttpClient Http
 
 <h3>Munkák</h3>

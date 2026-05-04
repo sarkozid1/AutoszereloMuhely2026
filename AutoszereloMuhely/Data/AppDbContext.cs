@@ -29,4 +29,7 @@ public class MongoDbContext
 
     // A Munkak kollekció elérése
     public IMongoCollection<Munka> Munkak => _database.GetCollection<Munka>("munkak");
+
+    // A Felhasznalok kollekció elérése (bejelentkezési és szerepkör adatok)
+    public IMongoCollection<Felhasznalo> Felhasznalok => _database.GetCollection<Felhasznalo>("felhasznalok");
 }

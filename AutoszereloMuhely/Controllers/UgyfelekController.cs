@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using AutoszereloMuhely.Dtos;
 using AutoszereloMuhely.Services;
 
@@ -7,6 +8,7 @@ namespace AutoszereloMuhely.Controllers;
 // Az ügyfelekhez tartozó API végpontokat kezelő controller
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Dolgozo,Adminisztrator")]
 public class UgyfelekController : ControllerBase
 {
     private readonly IUgyfelService _service;
@@ -44,6 +46,7 @@ public class UgyfelekController : ControllerBase
 
     // DELETE /api/ugyfelek/5 - Ügyfél törlése (a munkái is törlődnek - cascade)
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Adminisztrator")]
     public async Task<ActionResult> Delete(string id)
         => await _service.DeleteAsync(id) ? NoContent() : NotFound();
 }

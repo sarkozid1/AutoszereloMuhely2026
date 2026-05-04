@@ -1,52 +1,66 @@
+using System.Text;
 using AutoszereloMuhely.Data;
 using AutoszereloMuhely.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Service-ek regisztrálása (Dependency Injection) ---
 
-// Controllerek regisztrálása - az ASP.NET ezáltal tudja, hová irányítsa a HTTP kéréseket
 builder.Services.AddControllers();
-
-// Swagger UI engedélyezése - interaktív API tesztelő felület (csak fejlesztéskor)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// MongoDB beállítások betöltése az appsettings.json-ból
+// MongoDB beállítások
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDB"));
-
-// MongoDB kontextus regisztrálása Singleton ként (az adatbázis kapcsolat hosszú életű)
 builder.Services.AddSingleton<MongoDbContext>();
 
-// Saját service-ek regisztrálása
-// AddScoped = minden HTTP kérésnél új példány jön létre
+// JWT beállítások
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+
+// JWT hitelesítés
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Service-ek
 builder.Services.AddScoped<IMunkaoraService, MunkaoraService>();
 builder.Services.AddScoped<IMunkaService, MunkaService>();
 builder.Services.AddScoped<IUgyfelService, UgyfelService>();
+builder.Services.AddScoped<IFelhasznaloService, FelhasznaloService>();
 
-// CORS engedélyezése - a Blazor kliens más porton fut, enélkül a böngésző blokkolná a kéréseket
+// CORS - Blazor kliens más porton fut
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(b =>
         b.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 var app = builder.Build();
 
-// --- HTTP kérés feldolgozási pipeline ---
-
-// Swagger UI csak fejlesztési módban érhető el
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// CORS middleware - engedélyezi a cross-origin kéréseket
 app.UseCors();
-
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
-
-// Controller végpontok leképezése az URL-ekre
 app.MapControllers();
 
 app.Run();

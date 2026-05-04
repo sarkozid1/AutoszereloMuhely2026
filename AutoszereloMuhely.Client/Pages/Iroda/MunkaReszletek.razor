@@ -1,5 +1,6 @@
 ﻿@* Irodai felület - Egy munka részletes adatai és szerkesztése *@
 @page "/iroda/munkak/{Id}"
+@attribute [Authorize(Roles = "Dolgozo,Adminisztrator")]
 @inject HttpClient Http
 @inject NavigationManager Navigation
 

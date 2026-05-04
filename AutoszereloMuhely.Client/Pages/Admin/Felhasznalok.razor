@@ -1,0 +1,151 @@
+@page "/admin/felhasznalok"
+@attribute [Authorize(Roles = "Adminisztrator")]
+@inject HttpClient Http
+
+<PageTitle>Felhasználók kezelése</PageTitle>
+
+<h3>Felhasználók kezelése</h3>
+
+@if (felhasznalok == null)
+{
+    <p>Betöltés...</p>
+}
+else if (felhasznalok.Count == 0)
+{
+    <p>Nincs regisztrált felhasználó.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Felhasználónév</th>
+                <th>Teljes név</th>
+                <th>Email</th>
+                <th>Telefonszám</th>
+                <th>Szerepkör</th>
+                <th>Műveletek</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var f in felhasznalok)
+            {
+                <tr>
+                    <td>@f.Felhasznalonev</td>
+                    <td>
+                        @if (szerkesztesId == f.Id)
+                        {
+                            <input class="form-control form-control-sm" @bind="szerkesztesNev" />
+                        }
+                        else
+                        {
+                            @f.Nev
+                        }
+                    </td>
+                    <td>@f.Email</td>
+                    <td>
+                        @if (szerkesztesId == f.Id)
+                        {
+                            <input class="form-control form-control-sm" @bind="szerkesztesTolefonszam" />
+                        }
+                        else
+                        {
+                            @(f.Telefonszam ?? "-")
+                        }
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm"
+                                value="@f.Szerep"
+                                @onchange="e => SzerepValtozas(f, e.Value?.ToString())">
+                            <option value="Felhasznalo">Felhasználó</option>
+                            <option value="Dolgozo">Dolgozó</option>
+                            <option value="Adminisztrator">Adminisztrátor</option>
+                        </select>
+                    </td>
+                    <td>
+                        @if (szerkesztesId == f.Id)
+                        {
+                            <button class="btn btn-sm btn-success me-1" @onclick="() => AlapMentes(f.Id)">Mentés</button>
+                            <button class="btn btn-sm btn-secondary" @onclick="MegseInd">Mégsem</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-primary me-1" @onclick="() => SzerkesztesInd(f)">Szerkesztés</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => Torles(f.Id)">Törlés</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(uzenet))
+{
+    <div class="alert alert-info mt-3">@uzenet</div>
+}
+
+@code {
+    private List<FelhasznaloDto>? felhasznalok;
+    private string? szerkesztesId;
+    private string szerkesztesNev = string.Empty;
+    private string? szerkesztesTolefonszam;
+    private string? uzenet;
+
+    protected override async Task OnInitializedAsync()
+        => await BetoltFelhasznalok();
+
+    private async Task BetoltFelhasznalok()
+        => felhasznalok = await Http.GetFromJsonAsync<List<FelhasznaloDto>>("api/felhasznalok");
+
+    private void SzerkesztesInd(FelhasznaloDto f)
+    {
+        szerkesztesId = f.Id;
+        szerkesztesNev = f.Nev;
+        szerkesztesTolefonszam = f.Telefonszam;
+    }
+
+    private void MegseInd()
+    {
+        szerkesztesId = null;
+        uzenet = null;
+    }
+
+    private async Task AlapMentes(string id)
+    {
+        var dto = new { Nev = szerkesztesNev, Telefonszam = szerkesztesTolefonszam };
+        var response = await Http.PutAsJsonAsync($"api/felhasznalok/{id}/alap", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            uzenet = "Adatok mentve.";
+            szerkesztesId = null;
+            await BetoltFelhasznalok();
+        }
+        else
+        {
+            uzenet = "Hiba a mentésnél.";
+        }
+    }
+
+    private async Task SzerepValtozas(FelhasznaloDto f, string? ujSzerep)
+    {
+        if (string.IsNullOrEmpty(ujSzerep) || ujSzerep == f.Szerep) return;
+        var dto = new { Szerep = ujSzerep };
+        var response = await Http.PutAsJsonAsync($"api/felhasznalok/{f.Id}/szerep", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            uzenet = $"{f.Felhasznalonev} szerepköre módosítva: {ujSzerep}";
+            await BetoltFelhasznalok();
+        }
+    }
+
+    private async Task Torles(string id)
+    {
+        var response = await Http.DeleteAsync($"api/felhasznalok/{id}");
+        if (response.IsSuccessStatusCode)
+        {
+            uzenet = "Felhasználó törölve.";
+            await BetoltFelhasznalok();
+        }
+    }
+}

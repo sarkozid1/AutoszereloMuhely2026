@@ -5,6 +5,7 @@
 }
 @* Irodai felület - Ügyfelek listázása, hozzáadása, törlése *@
 @page "/iroda/ugyfelek"
+@attribute [Authorize(Roles = "Dolgozo,Adminisztrator")]
 @inject HttpClient Http
 
 <h3>Megrendelők</h3>
