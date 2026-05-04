@@ -1,53 +1,265 @@
-﻿@page "/megrendelo"
+﻿@* Megrendelői felület - nyitóoldal *@
+@page "/megrendelo"
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject AuthService AuthService
 
-<div class="login-box">
-    <div class="card" style="padding: 32px;">
-        <h3>Megrendelői felület</h3>
-        <p style="color: #718096;">Válassza ki a nevet a munkái megtekintésehez:</p>
+<PageTitle>Megrendelői felület</PageTitle>
 
-        @if (ugyfelek == null)
+<h3>Megrendelői felület</h3>
+
+<AuthorizeView Roles="Felhasznalo" Context="authCtx">
+    <Authorized>
+        @* Bejelentkezett felhasználó - saját munkák és új rendelés *@
+        <p>Üdvözöljük, <strong>@authCtx.User.Identity?.Name</strong>!</p>
+
+        <div class="d-flex gap-3 mb-4">
+            <button class="btn btn-primary" @onclick="NezMunkak">Megrendeléseim</button>
+            <button class="btn btn-success" @onclick="NezUjMunka">Új megrendelés leadása</button>
+        </div>
+
+        @if (nezet == "munkak")
         {
-            <p class="loading">Betöltés...</p>
+            @if (munkak == null)
+            {
+                <p>Betöltés...</p>
+            }
+            else if (munkak.Count == 0)
+            {
+                <p>Jelenleg nincs aktív megrendelése.</p>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <input class="form-control" placeholder="Keresés (rendszám, kategória, állapot)..."
+                           @bind="munkakKeres" @bind:event="oninput" />
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Rendszám</th>
+                            <th>Kategória</th>
+                            <th>Hiba leírása</th>
+                            <th>Súlyosság</th>
+                            <th>Állapot</th>
+                            <th>Esztimáció (óra)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in SzurtMunkak)
+                        {
+                            <tr>
+                                <td>@m.Rendszam</td>
+                                <td>@m.Kategoria</td>
+                                <td>@m.HibaLeiras</td>
+                                <td>@m.HibaSulyossag</td>
+                                <td>@m.Allapot</td>
+                                <td>@m.MunkaoraEsztimacio.ToString("F1")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
         }
-        else if (ugyfelek.Count == 0)
+
+        @if (nezet == "ujmunka")
         {
-            <p class="empty-state">Nincs regisztrált megrendelő.</p>
+            <h4>Új megrendelés</h4>
+            @if (!string.IsNullOrEmpty(sikerUzenet))
+            {
+                <div class="alert alert-success">@sikerUzenet</div>
+            }
+            <EditForm Model="@ujMunka" OnValidSubmit="BejelentkezettMegrendeles">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="mb-2">
+                    <label class="form-label">Rendszám (XXX-YYY):</label>
+                    <InputText class="form-control" @bind-Value="ujMunka.Rendszam" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Gyártási év:</label>
+                    <InputNumber class="form-control" @bind-Value="ujMunka.GyartasiEv" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Kategória:</label>
+                    <InputSelect class="form-select" @bind-Value="ujMunka.Kategoria">
+                        <option value="">-- Válasszon --</option>
+                        <option value="Karosszeria">Karosszéria</option>
+                        <option value="Motor">Motor</option>
+                        <option value="Futomu">Futómű</option>
+                        <option value="Fekberendezes">Fékberendezés</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Hiba leírása:</label>
+                    <InputText class="form-control" @bind-Value="ujMunka.HibaLeiras" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Súlyosság (1-10):</label>
+                    <InputNumber class="form-control" @bind-Value="ujMunka.HibaSulyossag" />
+                </div>
+                <button type="submit" class="btn btn-success">Megrendelés leadása</button>
+            </EditForm>
+        }
+    </Authorized>
+</AuthorizeView>
+
+<AuthorizeView Context="anonCtx">
+    <NotAuthorized>
+        @* Nem bejelentkezett - anonim megrendelés vagy bejelentkezés *@
+        <div class="mb-3">
+            <p>
+                Rendelését bejelentkezés nélkül is leadhatja, de
+                <a href="/bejelentkezes">bejelentkezve</a> vagy
+                <a href="/regisztracio">regisztrálva</a> nyomon követheti megrendeléseit.
+            </p>
+        </div>
+
+        @if (!anonSiker)
+        {
+            <h4>Megrendelés leadása (regisztráció nélkül)</h4>
+            @if (!string.IsNullOrEmpty(anonHiba))
+            {
+                <div class="alert alert-danger">@anonHiba</div>
+            }
+            <EditForm Model="@anonModel" OnValidSubmit="AnonMegrendeles">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <h5 class="mt-3">Személyes adatok</h5>
+                <div class="mb-2">
+                    <label class="form-label">Teljes név:</label>
+                    <InputText class="form-control" @bind-Value="anonModel.Nev" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Email cím (megrendelés azonosítóhoz):</label>
+                    <InputText class="form-control" @bind-Value="anonModel.Email" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Lakcím:</label>
+                    <InputText class="form-control" @bind-Value="anonModel.Lakcim" />
+                </div>
+
+                <h5 class="mt-3">Jármű és hiba adatok</h5>
+                <div class="mb-2">
+                    <label class="form-label">Rendszám (XXX-YYY):</label>
+                    <InputText class="form-control" @bind-Value="anonModel.Rendszam" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Gyártási év:</label>
+                    <InputNumber class="form-control" @bind-Value="anonModel.GyartasiEv" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Kategória:</label>
+                    <InputSelect class="form-select" @bind-Value="anonModel.Kategoria">
+                        <option value="">-- Válasszon --</option>
+                        <option value="Karosszeria">Karosszéria</option>
+                        <option value="Motor">Motor</option>
+                        <option value="Futomu">Futómű</option>
+                        <option value="Fekberendezes">Fékberendezés</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Hiba leírása:</label>
+                    <InputText class="form-control" @bind-Value="anonModel.HibaLeiras" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Súlyosság (1-10):</label>
+                    <InputNumber class="form-control" @bind-Value="anonModel.HibaSulyossag" />
+                </div>
+                <button type="submit" class="btn btn-success">Megrendelés leadása</button>
+            </EditForm>
         }
         else
         {
-            <div class="form-group" style="max-width: 100%;">
-                <select @bind="valasztottId" style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 1rem;">
-                    <option value="">-- Válasszon ügyfelet --</option>
-                    @foreach (var u in ugyfelek)
-                    {
-                        <option value="@u.Id">@u.Nev (@u.Email)</option>
-                    }
-                </select>
+            <div class="alert alert-success">
+                <h5>Megrendelés sikeresen leadva!</h5>
+                <p>Köszönjük megrendelését! Az irodánk felveszi Önnel a kapcsolatot.</p>
+                <a href="/regisztracio" class="btn btn-primary me-2">Regisztráljon a nyomon követéshez</a>
+                <button class="btn btn-outline-secondary" @onclick="AnonSikerNullaz">Abból megrendelés</button>
             </div>
-            <button class="btn btn-primary" style="padding: 10px 24px;" @onclick="Kereses"
-                    disabled="@(string.IsNullOrEmpty(valasztottId))">
-                Munkák megtekintése
-            </button>
         }
-    </div>
-</div>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
-    private List<UgyfelDto>? ugyfelek;
-    private string valasztottId = string.Empty;
+    // Bejelentkezett user nézet
+    private string nezet = "munkak";
+    private void NezMunkak() => nezet = "munkak";
+    private void NezUjMunka() => nezet = "ujmunka";
+    private void AnonSikerNullaz() => anonSiker = false;
+    private List<MunkaDto>? munkak;
+    private SajatMunkaDto ujMunka = new();
+    private string? sikerUzenet;
+    private string munkakKeres = string.Empty;
+
+    private IEnumerable<MunkaDto> SzurtMunkak => munkak == null
+        ? Enumerable.Empty<MunkaDto>()
+        : munkak.Where(m =>
+            string.IsNullOrWhiteSpace(munkakKeres) ||
+            m.Rendszam.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase) ||
+            m.Kategoria.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase) ||
+            m.Allapot.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase));
+
+    // Anonim nézet
+    private AnonMegrendelesDto anonModel = new();
+    private string? anonHiba;
+    private bool anonSiker;
 
     protected override async Task OnInitializedAsync()
     {
-        ugyfelek = await Http.GetFromJsonAsync<List<UgyfelDto>>("api/ugyfelek");
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user != null && user.Szerep == "Felhasznalo")
+            await BetoltSajatMunkak();
     }
 
-    private void Kereses()
+    private async Task BetoltSajatMunkak()
     {
-        if (!string.IsNullOrEmpty(valasztottId))
+        try
         {
-            Navigation.NavigateTo($"/megrendelo/munkak/{valasztottId}");
+            munkak = await Http.GetFromJsonAsync<List<MunkaDto>>("api/munkak/sajat");
+        }
+        catch
+        {
+            munkak = new List<MunkaDto>();
+        }
+    }
+
+    private async Task BejelentkezettMegrendeles()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/munkak/sajat", ujMunka);
+            if (response.IsSuccessStatusCode)
+            {
+                sikerUzenet = "Megrendelés sikeresen leadva!";
+                ujMunka = new SajatMunkaDto();
+                nezet = "munkak";
+                await BetoltSajatMunkak();
+            }
+            else
+            {
+                sikerUzenet = null;
+            }
+        }
+        catch
+        {
+            // Hiba esetén csendének marad - nem számlál jó hibakezelés
+        }
+    }
+
+    private async Task AnonMegrendeles()
+    {
+        anonHiba = null;
+        var response = await Http.PostAsJsonAsync("api/munkak/megrendeles", anonModel);
+        if (response.IsSuccessStatusCode)
+        {
+            anonSiker = true;
+            anonModel = new();
+        }
+        else
+        {
+            anonHiba = "Hiba a megrendelés leadásánál. Kérjük próbálja újra.";
         }
     }
 }

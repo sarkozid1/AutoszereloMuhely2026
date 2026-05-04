@@ -1,0 +1,82 @@
+@page "/regisztracio"
+@inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Regisztráció</PageTitle>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <h3>Regisztráció</h3>
+        <p class="text-muted">Regisztráljon, hogy nyomon követhesse megrendeléseit!</p>
+
+        @if (!string.IsNullOrEmpty(hibaUzenet))
+        {
+            <div class="alert alert-danger">@hibaUzenet</div>
+        }
+
+        <EditForm Model="@model" OnValidSubmit="RegisztracioKiserlet">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Teljes név:</label>
+                <InputText class="form-control" @bind-Value="model.Nev" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Lakcím:</label>
+                <InputText class="form-control" @bind-Value="model.Lakcim" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Felhasználónév:</label>
+                <InputText class="form-control" @bind-Value="model.Felhasznalonev" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email cím:</label>
+                <InputText class="form-control" @bind-Value="model.Email" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Jelszó (min. 6 karakter):</label>
+                <InputText class="form-control" type="password" @bind-Value="model.Jelszo" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Jelszó megerősítése:</label>
+                <InputText class="form-control" type="password" @bind-Value="model.JelszoMegerosites" />
+            </div>
+            <button type="submit" class="btn btn-success w-100" disabled="@betoltes">
+                @(betoltes ? "Regisztráció..." : "Regisztráció")
+            </button>
+        </EditForm>
+
+        <div class="mt-3 text-center">
+            <a href="/bejelentkezes">Már van fiókja? Jelentkezzen be!</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterDto model = new();
+    private string? hibaUzenet;
+    private bool betoltes;
+
+    private async Task RegisztracioKiserlet()
+    {
+        betoltes = true;
+        hibaUzenet = null;
+
+        var (success, error) = await AuthService.RegisterAsync(model);
+
+        if (success)
+        {
+            if (AuthStateProvider is CustomAuthStateProvider provider)
+                provider.NotifyAuthStateChanged();
+            Navigation.NavigateTo("/megrendelo");
+        }
+        else
+        {
+            hibaUzenet = error ?? "Regisztráció sikertelen.";
+        }
+
+        betoltes = false;
+    }
+}

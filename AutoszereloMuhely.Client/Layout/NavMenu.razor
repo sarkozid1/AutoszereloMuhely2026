@@ -1,4 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Autószerelő Műhely</a>
     </div>
@@ -6,25 +10,119 @@
 
 <div class="nav-scrollable">
     <nav class="flex-column">
+
+        <AuthorizeView>
+            <Authorized>
+                @* Bejelentkezett felhasználó neve *@
+                <div class="nav-item px-3 py-2 text-white small">
+                    <strong>@context.User.Identity?.Name</strong>
+                    <span class="badge ms-1 bg-secondary">@GetSzerepCimke(context)</span>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        @* Főoldal - mindenki látja *@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
                 Főoldal
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/iroda/ugyfelek" Match="NavLinkMatch.Prefix">
-                Megrendelők
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/iroda/munkak" Match="NavLinkMatch.Prefix">
-                Munkák
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/megrendelo" Match="NavLinkMatch.Prefix">
-                Megrendelői felület
-            </NavLink>
-        </div>
+
+        @* Megrendelői felület - bejelentkezett felhasználónak és nem bejelentkezettnek is *@
+        <AuthorizeView Roles="Felhasznalo">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/megrendelo">
+                        Megrendeléseim
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        @* Nem bejelentkezett - megrendelés leadása *@
+        <AuthorizeView>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/megrendelo">
+                        Megrendelés leadása
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        @* Irodai felület - csak Dolgozo és Adminisztrator *@
+        <AuthorizeView Roles="Dolgozo,Adminisztrator">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/iroda/ugyfelek">
+                        Megrendelők
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/iroda/munkak">
+                        Munkák
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        @* Admin felület *@
+        <AuthorizeView Roles="Adminisztrator">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/admin/felhasznalok">
+                        Felhasználók kezelése
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        @* Bejelentkezés / Regisztráció - csak nem bejelentkezett *@
+        <AuthorizeView>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/bejelentkezes">
+                        Bejelentkezés
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/regisztracio">
+                        Regisztráció
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+
+            @* Kijelentkezés - bejelentkezett felhasználónak *@
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/profil">
+                        Profilom
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <a class="nav-link" href="#" @onclick="Kijelentkezes" @onclick:preventDefault>
+                        Kijelentkezés
+                    </a>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
     </nav>
 </div>
+
+@code {
+    private async Task Kijelentkezes()
+    {
+        await AuthService.LogoutAsync();
+        if (AuthStateProvider is CustomAuthStateProvider provider)
+            provider.NotifyAuthStateChanged();
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    private string GetSzerepCimke(AuthenticationState context)
+    {
+        if (context.User.IsInRole("Adminisztrator")) return "Admin";
+        if (context.User.IsInRole("Dolgozo")) return "Dolgozó";
+        return "Felhasználó";
+    }
+}

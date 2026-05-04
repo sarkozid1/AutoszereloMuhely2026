@@ -1,0 +1,124 @@
+@page "/profil"
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Profilom</PageTitle>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <h3>Profilom</h3>
+
+        @if (betoltes)
+        {
+            <p>Betöltés...</p>
+        }
+        else if (felhasznalo == null)
+        {
+            <div class="alert alert-danger">Nem sikerült betölteni az adatokat.</div>
+        }
+        else
+        {
+            <div class="mb-3">
+                <label class="form-label text-muted">Felhasználónév</label>
+                <p class="form-control-plaintext fw-bold">@felhasznalo.Felhasznalonev</p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted">Email</label>
+                <p class="form-control-plaintext">@felhasznalo.Email</p>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted">Szerepkör</label>
+                <p class="form-control-plaintext">
+                    <span class="badge bg-secondary">@felhasznalo.Szerep</span>
+                </p>
+            </div>
+
+            <hr />
+            <h5>Adatok szerkesztése</h5>
+
+            @if (!string.IsNullOrEmpty(sikerUzenet))
+            {
+                <div class="alert alert-success">@sikerUzenet</div>
+            }
+            @if (!string.IsNullOrEmpty(hibaUzenet))
+            {
+                <div class="alert alert-danger">@hibaUzenet</div>
+            }
+
+            <EditForm Model="@szerkesztesModel" OnValidSubmit="Mentes">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label class="form-label">Teljes név:</label>
+                    <InputText class="form-control" @bind-Value="szerkesztesModel.Nev" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Telefonszám:</label>
+                    <InputText class="form-control" @bind-Value="szerkesztesModel.Telefonszam" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Lakcím:</label>
+                    <InputText class="form-control" @bind-Value="szerkesztesModel.Lakcim" />
+                </div>
+                <button type="submit" class="btn btn-primary" disabled="@mentes">
+                    @(mentes ? "Mentés..." : "Mentés")
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private FelhasznaloDto? felhasznalo;
+    private ProfilUpdateDto szerkesztesModel = new();
+    private bool betoltes = true;
+    private bool mentes;
+    private string? sikerUzenet;
+    private string? hibaUzenet;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            felhasznalo = await Http.GetFromJsonAsync<FelhasznaloDto>("api/felhasznalok/sajat");
+            if (felhasznalo != null)
+                szerkesztesModel = new ProfilUpdateDto
+                {
+                    Nev = felhasznalo.Nev,
+                    Telefonszam = felhasznalo.Telefonszam,
+                    Lakcim = felhasznalo.Lakcim
+                };
+        }
+        catch { }
+        finally { betoltes = false; }
+    }
+
+    private async Task Mentes()
+    {
+        mentes = true;
+        sikerUzenet = null;
+        hibaUzenet = null;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync("api/felhasznalok/sajat", szerkesztesModel);
+            if (response.IsSuccessStatusCode)
+            {
+                felhasznalo = await response.Content.ReadFromJsonAsync<FelhasznaloDto>();
+                sikerUzenet = "Adatok sikeresen mentve!";
+            }
+            else
+            {
+                hibaUzenet = "Hiba a mentésnél. Kérjük próbálja újra.";
+            }
+        }
+        catch
+        {
+            hibaUzenet = "Nem sikerült kapcsolódni a szerverhez.";
+        }
+        finally { mentes = false; }
+    }
+}

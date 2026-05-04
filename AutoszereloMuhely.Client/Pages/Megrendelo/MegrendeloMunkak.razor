@@ -1,4 +1,6 @@
-﻿@page "/megrendelo/munkak/{UgyfelId}"
+@* Megrendelői felület - Az ügyfélhez tartozó munkák listája (dolgozó nézi egy ügyfélét) *@
+@page "/megrendelo/munkak/{UgyfelId}"
+@attribute [Authorize(Roles = "Dolgozo,Adminisztrator")]
 @inject HttpClient Http
 
 <h3>Az ön munkái</h3>
