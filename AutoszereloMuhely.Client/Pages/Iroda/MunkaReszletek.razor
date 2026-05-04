@@ -41,6 +41,10 @@ else
 
     <div class="card">
         <h4>Szerkesztes</h4>
+        @if (!string.IsNullOrEmpty(mentesUzenet))
+        {
+            <div class="alert alert-success">@mentesUzenet</div>
+        }
         <EditForm Model="@szerkesztes" OnValidSubmit="Mentes">
             <DataAnnotationsValidator />
             <ValidationSummary class="validation-errors" />
@@ -82,6 +86,7 @@ else
 
     private MunkaDto? munka;
     private UpdateMunkaDto szerkesztes = new();
+    private string? mentesUzenet;
 
     protected override async Task OnInitializedAsync()
     {
@@ -101,8 +106,16 @@ else
 
     private async Task Mentes()
     {
-        await Http.PutAsJsonAsync($"api/munkak/{Id}", szerkesztes);
-        munka = await Http.GetFromJsonAsync<MunkaDto>($"api/munkak/{Id}");
+        var response = await Http.PutAsJsonAsync($"api/munkak/{Id}", szerkesztes);
+        if (response.IsSuccessStatusCode)
+        {
+            munka = await Http.GetFromJsonAsync<MunkaDto>($"api/munkak/{Id}");
+            mentesUzenet = "Adatok sikeresen mentve.";
+        }
+        else
+        {
+            mentesUzenet = "Hiba a mentésnél.";
+        }
     }
 
     private string AllapotNev(string a) => a switch

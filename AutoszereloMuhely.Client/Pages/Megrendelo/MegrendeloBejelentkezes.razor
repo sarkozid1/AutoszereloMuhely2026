@@ -30,6 +30,10 @@
             }
             else
             {
+                <div class="mb-3">
+                    <input class="form-control" placeholder="Keresés (rendszám, kategória, állapot)..."
+                           @bind="munkakKeres" @bind:event="oninput" />
+                </div>
                 <table class="table">
                     <thead>
                         <tr>
@@ -42,7 +46,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var m in munkak)
+                        @foreach (var m in SzurtMunkak)
                         {
                             <tr>
                                 <td>@m.Rendszam</td>
@@ -187,6 +191,15 @@
     private List<MunkaDto>? munkak;
     private SajatMunkaDto ujMunka = new();
     private string? sikerUzenet;
+    private string munkakKeres = string.Empty;
+
+    private IEnumerable<MunkaDto> SzurtMunkak => munkak == null
+        ? Enumerable.Empty<MunkaDto>()
+        : munkak.Where(m =>
+            string.IsNullOrWhiteSpace(munkakKeres) ||
+            m.Rendszam.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase) ||
+            m.Kategoria.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase) ||
+            m.Allapot.Contains(munkakKeres, StringComparison.OrdinalIgnoreCase));
 
     // Anonim nézet
     private AnonMegrendelesDto anonModel = new();

@@ -33,6 +33,11 @@
 <div class="card">
     <h4>Megrendelők listája</h4>
 
+    <div class="mb-3">
+        <input class="form-control" placeholder="Keresés (név, email, lakcím)..."
+               @bind="keresoszoveg" @bind:event="oninput" />
+    </div>
+
     @if (ugyfelek == null)
     {
         <p class="loading">Betöltes...</p>
@@ -53,7 +58,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var u in ugyfelek)
+                @foreach (var u in SzurtUgyfelek)
                 {
                     <tr>
                         <td>@u.Nev</td>
@@ -73,6 +78,15 @@
 @code {
     private List<UgyfelDto>? ugyfelek;
     private CreateUgyfelDto ujUgyfel = new();
+    private string keresoszoveg = string.Empty;
+
+    private IEnumerable<UgyfelDto> SzurtUgyfelek => ugyfelek == null
+        ? Enumerable.Empty<UgyfelDto>()
+        : ugyfelek.Where(u =>
+            string.IsNullOrWhiteSpace(keresoszoveg) ||
+            u.Nev.Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase) ||
+            u.Email.Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase) ||
+            (u.Lakcim ?? string.Empty).Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {

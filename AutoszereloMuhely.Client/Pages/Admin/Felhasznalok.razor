@@ -6,6 +6,11 @@
 
 <h3>Felhasználók kezelése</h3>
 
+<div class="mb-3">
+    <input class="form-control" placeholder="Keresés (felhasználónév, név, email)..."
+           @bind="keresoszoveg" @bind:event="oninput" />
+</div>
+
 @if (felhasznalok == null)
 {
     <p>Betöltés...</p>
@@ -23,12 +28,13 @@ else
                 <th>Teljes név</th>
                 <th>Email</th>
                 <th>Telefonszám</th>
+                <th>Lakcím</th>
                 <th>Szerepkör</th>
                 <th>Műveletek</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var f in felhasznalok)
+            @foreach (var f in SzurtFelhasznalok)
             {
                 <tr>
                     <td>@f.Felhasznalonev</td>
@@ -51,6 +57,16 @@ else
                         else
                         {
                             @(f.Telefonszam ?? "-")
+                        }
+                    </td>
+                    <td>
+                        @if (szerkesztesId == f.Id)
+                        {
+                            <input class="form-control form-control-sm" @bind="szerkesztesLakcim" />
+                        }
+                        else
+                        {
+                            @(f.Lakcim ?? "-")
                         }
                     </td>
                     <td>
@@ -90,7 +106,17 @@ else
     private string? szerkesztesId;
     private string szerkesztesNev = string.Empty;
     private string? szerkesztesTolefonszam;
+    private string? szerkesztesLakcim;
     private string? uzenet;
+    private string keresoszoveg = string.Empty;
+
+    private IEnumerable<FelhasznaloDto> SzurtFelhasznalok => felhasznalok == null
+        ? Enumerable.Empty<FelhasznaloDto>()
+        : felhasznalok.Where(f =>
+            string.IsNullOrWhiteSpace(keresoszoveg) ||
+            f.Felhasznalonev.Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase) ||
+            f.Nev.Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase) ||
+            f.Email.Contains(keresoszoveg, StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
         => await BetoltFelhasznalok();
@@ -103,6 +129,7 @@ else
         szerkesztesId = f.Id;
         szerkesztesNev = f.Nev;
         szerkesztesTolefonszam = f.Telefonszam;
+        szerkesztesLakcim = f.Lakcim;
     }
 
     private void MegseInd()
@@ -113,7 +140,7 @@ else
 
     private async Task AlapMentes(string id)
     {
-        var dto = new { Nev = szerkesztesNev, Telefonszam = szerkesztesTolefonszam };
+        var dto = new { Nev = szerkesztesNev, Telefonszam = szerkesztesTolefonszam, Lakcim = szerkesztesLakcim };
         var response = await Http.PutAsJsonAsync($"api/felhasznalok/{id}/alap", dto);
         if (response.IsSuccessStatusCode)
         {
