@@ -10,6 +10,7 @@ Blazor WebAssembly frontend + ASP.NET Core Web API backend, MongoDB adatbázissa
 | Csomag | Verzió |
 |---|---|
 | `MongoDB.Driver` | 3.4.0 |
+| `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.0.3 |
 | `Microsoft.AspNetCore.OpenApi` | 10.0.3 |
 | `Swashbuckle.AspNetCore` | 10.1.7 |
 
@@ -20,6 +21,7 @@ Nincs extra NuGet csomag — a standard Blazor WebAssembly keretrendszer elegend
 | Csomag | Verzió |
 |---|---|
 | `xunit` | 2.9.3 |
+| `xunit.runner.visualstudio` | 3.1.4 |
 | `NSubstitute` | 5.3.0 |
 | `coverlet.collector` | 6.0.4 |
 | `Microsoft.NET.Test.Sdk` | 17.14.1 |
@@ -85,16 +87,31 @@ A Blazor frontend a böngészőben nyílik meg (pl. `https://localhost:7xxx`).
 
 ### Az alkalmazás funkciói
 
-#### Irodai felület (`/iroda`)
-- `/iroda/ugyfelek` — Megrendelők listázása, hozzáadása, törlése
-- `/iroda/munkak` — Munkák listázása, hozzáadása, állapotléptetés, törlés
+#### Bejelentkezés / Regisztráció
+- `/bejelentkezes` — Felhasználói bejelentkezés (JWT alapú)
+- `/regisztracio` — Új felhasználói fiók létrehozása
+- `/iroda/login` — Irodai dolgozói bejelentkezés
+- `/profil` — Bejelentkezett felhasználó profiljának megtekintése és szerkesztése
+
+#### Irodai felület (`/iroda`) — Dolgozó / Admin szerepkör
+- `/iroda/ugyfelek` — Megrendelők listázása, keresése, hozzáadása, törlése
+- `/iroda/ugyfelek/szerkesztes/{id}` — Ügyfél adatainak szerkesztése
+- `/iroda/munkak` — Munkák listázása, keresése, hozzáadása, állapotléptetés, törlés
 - `/iroda/munkak/{id}` — Egy munka részletes adatai és szerkesztése
 
+#### Admin felület (`/admin`) — Admin szerepkör
+- `/admin/felhasznalok` — Felhasználók kezelése, szerepkörök módosítása
+
 #### Megrendelői felület (`/megrendelo`)
-- `/megrendelo` — Ügyfél-azonosító (ObjectId) megadása
+- `/megrendelo/bejelentkezes` — Megrendelői bejelentkezés
 - `/megrendelo/munkak/{ugyfelId}` — Az ügyfélhez tartozó munkák megtekintése (csak olvasható)
 
-> **Fontos:** Az ügyfél azonosítója a MongoDB által generált ObjectId (24 karakteres hexadecimális string), nem egy sorszám. Az ügyfél saját ID-ját a Compass-ban vagy az irodai felületen lehet megtekinteni.
+#### Szerepkörök
+| Szerepkör | Hozzáférés |
+|---|---|
+| `Admin` | Teljes hozzáférés, felhasználókezelés |
+| `Dolgozo` | Irodai felület (ügyfelek, munkák) |
+| `Ugyfel` | Saját munkák megtekintése |
 
 ### Tesztek futtatása
 ```bash
